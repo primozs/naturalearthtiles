@@ -1,0 +1,47 @@
+version: "3.8"
+services:
+  postgis:
+    image: postgis/postgis:14-3.2
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:5432:5432
+    # volumes:
+    #   - ./db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: naturalearth
+      POSTGRES_USER: naturalearth
+      POSTGRES_DB: naturalearth
+
+  mapbox-studio:
+    image: "stepankuzmin/mapbox-studio-classic"
+    volumes:
+      - ./src/vector-datasource:/projects/vector-datasource.tm2source
+    volumes_from:
+      - raster-datasource
+    links:
+      - postgis:postgis
+    ports:
+      - "3000:3000"
+
+  db-schema:
+    image: "susa/db-schema"
+    links:
+      - postgis:postgis
+
+  import-naturalearth:
+    image: "susa/import-naturalearth"
+    links:
+      - postgis:postgis
+
+  raster-datasource:
+    image: "susa/raster-datasource"
+    volumes:
+      - ./data/raster:/projects/raster-datasource.tm2source
+
+  export-vectortiles:
+    image: "susa/export-vectortiles"
+    volumes:
+      - ./data:/export
+      - ./src/vector-datasource:/tm2source
+    links:
+      - postgis:postgis
